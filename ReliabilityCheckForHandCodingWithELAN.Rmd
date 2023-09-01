@@ -1,0 +1,113 @@
+---
+title: "ReliabilityCheckForHandCodingWithELAN"
+author: "Aaron Nakamura"
+date: "2023-05-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Loading packages**
+```{r}
+library(tidyr)
+library(dplyr)
+library(purrr)
+library(stringr)
+library(lubridate)
+```
+
+**Reading the data into R**
+```{r}
+#Set directory to a folder that only contains 2 files: two csv files of two coders, the same participant
+filelist <- list.files(path = "*your pathname*", pattern = "*.csv", ignore.case = F, all.files = F)
+df <- data.frame(matrix(NA, nrow=0, ncol=3))
+```
+
+**lodaing csv data from ELAN, and sorting them in shape**
+```{r}
+
+for (i in 1:length(filelist)) {
+  item <- filelist[i]
+  raw.gz <- read.csv(paste0("*your pathname*", item), header = F, sep = ",")
+  filename <- gsub(".csv", "", item)
+  
+  
+  # Naming the columns
+  names(raw.gz) <- c("tier", "start", "end", "look")
+  
+  # Extracting information from filenames
+  raw.gz$coder <- str_split_fixed(filename, "_", 2)[,1]
+  raw.gz$participant <- str_split_fixed(filename, "_", 2)[,2]
+  
+  
+  #Turn hms into s
+  raw.gz$start <- lubridate::hms(raw.gz$start)
+  raw.gz$start <- period_to_seconds(raw.gz$start)
+  
+  raw.gz$end <- lubridate::hms(raw.gz$end)
+  raw.gz$end <- period_to_seconds(raw.gz$end)
+  
+  # Turn seconds into milleseconds
+  raw.gz$start <- raw.gz$start * 1000
+  raw.gz$end <- raw.gz$end * 1000
+  
+  do <- raw.gz %>% 
+   mutate(time = map2(start, end, `:`)) %>% 
+    dplyr::select(-start, -end) %>% 
+    unnest(cols = c(time))
+
+
+  df <- rbind(df, do)
+  }
+```
+
+```{r}
+df <- dplyr::select(df, -c("tier"))
+```
+
+**set the raters**
+``` {r}
+one <- df %>% filter(coder == "*name of the coder 1*")
+two <- df %>% filter(coder == "*name of the coder 2*")
+
+one <- dplyr::select(one, -c("coder"))
+two <- dplyr::select(two, -c("coder"))
+
+colnames(MT)[1] ="one"
+colnames(HK)[1] ="two"
+
+df2 <- merge(one, two, by=c("time", "participant"))
+``` 
+
+**Reliability**
+``` {r}
+
+df2 <- df2 %>% mutate(reliability = case_when(
+    one == two ~ 1, TRUE~0
+))
+#write.csv(df2,"*nameofile*") 
+``` 
+
+**mean of interrater reliability**
+```{r}
+mean(df2$reliability)
+
+``` 
+
+**mean of interrater_reliability**
+```{r}
+#mean of interrater_reliability
+Part1_interrater <-
+Part2_interrater <-
+Part3_interrater <-
+Part4_interrater <-
+Part5_interrater <-
+
+IR<- c(Part1_interrater,Part2_interrater,Part3_interrater,Part4_interrater,Part5_interrater)
+mean(IR)
+```
+
+
+
