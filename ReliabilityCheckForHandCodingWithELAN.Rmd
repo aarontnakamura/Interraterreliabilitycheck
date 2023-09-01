@@ -75,8 +75,8 @@ two <- df %>% filter(coder == "*name of the coder 2*")
 one <- dplyr::select(one, -c("coder"))
 two <- dplyr::select(two, -c("coder"))
 
-colnames(MT)[1] ="one"
-colnames(HK)[1] ="two"
+colnames(one)[1] ="one"
+colnames(two)[1] ="two"
 
 df2 <- merge(one, two, by=c("time", "participant"))
 ``` 
